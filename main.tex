@@ -1,0 +1,79 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+
+\title{Exploration in Action Space}
+\author{Drew Bagnell, Anirudh Vemula, Wen Sun}
+\date{April 2018}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Recently, in a series of enjoyable blog posts \url{http://www.argmin.net/2018/03/20/mujocoloco/} and in \cite{Mania}, Ben Recht and colleagues have reached the following conclusion:
+``Our findings contradict the common belief that policy gradient techniques, which rely on exploration in the action space, are more sample efficient than methods based on
+finite-differences.``
+
+That's a conclusion I've often thought had a great deal of merit. In a survey (with Jens Kober and Jan Peters), we wrote:  
+
+``Black box methods are general stochastic optimization algorithms (Spall, 2003) using only the expected return of policies, estimated by sampling, and do not leverage any of the internal structure of the RL problem. These may be very sophisticated techniques (Tesch et al., 2011) that use response surface estimates and bandit-like strategies to achieve good performance. White box methods take advantage of some of additional structure within the reinforcement learning domain, including, for instance, the (approximate) Markov structure of problems, developing approximate models, value-function estimates when available (Peters and Schaal, 2008c), or even simply the causal ordering of actions and rewards. A major open issue within the field is the relative merits of the these two approaches: in principle, white box methods leverage more information, but with the exception of models (which have been demonstrated repeatedly to often make tremendous performance improvements, see Section 6), the performance gains are traded-off with additional assumptions that may be violated and less mature optimization algorithms. Some recent work including (Stulp and Sigaud, 2012; Tesch et al., 2011) suggest that much of the benefit of policy search is achieved by black-box methods.``
+
+Many empirical examples-- the classic Tetris for instance-- demonstrate that Cross-Entropy or other (fast) black-box heuristic methods are generally far superior to any policy gradient method and that even these achieved orders of magnitude better than methods demanding still more structure like, \textit{e.g.} temporal difference learning.  Basically, I despaired of seeing policy gradient methods achieve substantial performance: they simply don't have access to much of the potential problem structure.
+
+\section{The Structure of Policies}
+ 
+Now, I come to bury Reinforce, not to praise it. That said, action-space methods, including REINFORCE (but also ones I'm more fond of, like SEARN, PSDP, AGGREVATE, and others)   
+do leverage a \textem{bit} of structure: they understand the relationship (jacobian) between a policy's parameters and its outputs.  
+Does this matter? In a regime of large parameter space, and small output space as explored often by our colleagues in, \textit{e.g.} video games, it might.
+(Typical implementations also leverage causality of reward structure as well, although I expect that is relatively minor.)
+
+In particular, the intuition of action space exploration techniques is that they should perform well when the action space is quite small compared to the parametric complexity
+of the problem required.
+
+\section{Experiments}
+
+\subsection{MNIST}
+
+To experiment with this, like Recht we consider some toy problems with for instance, a single time step, and investigate.
+
+We begin with a classic problem: MNIST digit recognition. To put in a bandit/RL framework, we consider a +1 reward for getting the digit correct and
+a -1 reward for getting it wrong. We start with an ``industry standard'' ResNet design (parameter details here).
+
+We then compare the learning curves for plain, vanilla REINFORCE (even if a bad idea) with supervised learning and with ARS, the random search procedure indicated in \cite{Mania}.
+
+
+
+
+\subsection{Linear Regression}
+
+To get a handle on the trade-off between complexity in parameters and complexity in action space, we consider another simple, one step problem: linear regression
+with a single output variable and $d$ input dimensionality, and thus $d$ parameters. We consider learning a random linear function. In the full information, supervised learning
+setting, we'd expect to need $O(d)$ examples to learn (e.g. to have low regret), while in the setting where we perturb weights randomly \cite{Flaxman} we'd expect to need $O(d^2)$
+examples to learn.
+
+We compare then, the cumulative regret of a a covariant version of REINFORCE (which simply amounts to whitening the feature vectors) and the ARS method discussed in \cite{Mania} with
+classic follow-the-regularized-leader (Supervised Learning). The learning curves match our expectations, and moreover show that this bandit style REINFORCE lies between the curves of supervised learning and parmater space explocation: that is action space exploration takes advantage of the Jacobian of the policy itself and can learn faster. 
+
+
+
+\subsection{LQR}
+
+Finally, we consider learning in a setting where I think we'd all agree that a model based method would be preferred: a finite horizon LQR problem with a low (1D) dimensional control space
+and a high (1e6) degree state space. We then compare random search versus ARS versus REINFORCE.
+
+
+\section{Acknowledgements}
+
+We thank the entire LairLab for stimulating discussions, and Ben Recht for his interesting blog posts.
+
+\section{References}
+
+RL Survey
+\url{http://www.ias.tu-darmstadt.de/uploads/Publications/Kober_IJRR_2013.pdf}
+
+Cross Entropy Tetris
+\url{https://pdfs.semanticscholar.org/b199/22afc8678a228c780715d50f5a427dc51680.pdf}
+
+\end{document}
